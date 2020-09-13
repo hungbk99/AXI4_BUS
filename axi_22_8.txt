@@ -1,0 +1,719 @@
+I	Features:
+  The AMBA AXI protocol supports high-performance, high-frequency system designs
+    ->  suitable for high-bandwidth and low-latency designs
+    ->  provides high-frequency operation without using complex bridges
+    ->  meets the interface requirements of a wide range of components
+    ->  suitable for memory controllers with high initial access latency
+    ->  provides flexibility in the implementation of interconnect architectures
+    ->  backward-compatible with existing AHB and APB interfaces
+=================================================================================
+Key feature
+	1) seperate Addr/Control & Data phases
+	2) support unaligned data transfers using byte strobes
+	3) burst-based transaction with only the start address issued
+	4) seperate read and write channels, -> low-cost DMA
+	5) issue multiple outstanding address ??? => ID signals
+	6) out-of-order transaction completion ??? => ID signals
+	7) easy addition register stages to provide timing closure
+    => 5 channels independent, each channels transfer info in one direction
+    => channels can have different PP stages with each others
+=================================================================================
+
+II)	AXI architecture
+	independent transaction channels:
+	*	read address	
+	*	read data
+	=> 	because we have read data channels, which is from slave to master, so no need for read response channel
+	*	write address
+	*	write data
+	*	write response
+	
+	1) The AXI protocol:
+	* 	permits address information to be issued ahead of the actual data transfer ???
+	*	multiple outstanding transactions ???
+	*	out-of-order completion of transactions ???
+	
+	2) Channel definition
+	*	Each of channels: set of information signals, VALID AND READY signals.
+	VALID: address, data valid on the channel
+	READY: show when the destination can accept the data
+	LAST: use in both read and write channels => indicate the final data item in a transaction
+	*	Read & write data channels have their own address channels => carry out address and control signals 
+	*	Read data channel:
+			+ the data bus: 8, 16, 32, 64, 128, 256, 1024 bits wide
+			+ read response: indicate the completion status of the read transaction
+	*	Write data channel:	
+			+ the data bus: 8, 16, 32, 64, 128, 256, 1024 bits wide
+			+ a byte lane strobe signal: indicate which bytes of the data are 
+	Question:	Write data channel information is always treated as buffered, so that the master can perform write transactions
+	without slave acknowledgement of previous write transactions ???
+	* 	Write respond channel: all write transactions require completion signaling 
+=================================================================================
+
+=================================================================================
+	3) Interface and interconnect
+	number of master and slave devices connected together through some form of interconnect
+	AXI protocol provides a single interface definition, for the interfaces:
+		* master and the interconnect
+		* slave and interconnect
+		* master and slave
+	Note: an interconnect is equivalent to another device with symmetrical master and slave port to which real master and slave devices can be connected
+	*** 	Typical system topologies;
+		1 of 3 interconnect topologies:
+			+ shared address and data buses
+			+ shared address buses and multiple data buses
+			+ multiplayer, with multiple address and data buses
+
+	4) Register slices:
+	Register can be inserted at any point in any channel, at the cost of an addition cycle of latency
+	This make possible:
+		+ A trade-off between cycles of latency and maximum frequency of operation
+		+ A direct, fast connection between a processor and any high performance memory, but to use simple register slices to isolate
+		a longer path to less performance critical peripherals.
+	
+	5) Terminology (Glossary)
+		5.1 AXI component and topology:
+		+ Component: A distinct functional unit that has at least one AMBA interface. Component can be used as a general term for master,
+		slave, peripheral, and interconnect components
+		+ Master component
+		A component that initiates transactions.
+		It is possible that a single component can act as both a master component and as a slave component. For example,
+		a Direct Memory Access (DMA) component can be a master component when it is initiating transactions to move
+		daty, and a slave component when it is being programmed.
+		+ Slave component
+		A component that receives transactions and responds to them.
+		It is possible that a single component can act as both a slave component and as a master component. For example,
+		a Direct Memory Access (DMA) component can be a slave component when it is being programmed and a master
+		component when it is initiating transactions to move data.
+			* Memory slave component
+			 A memory slave component, or memory slave, is a slave component with the following properties:
+			  • a read of a byte from a memory slave returns the last value written to that byte location
+			  • a write to a byte location in a memory slave updates the value at that location to a new value that is obtained
+			 by subsequent reads
+			  • reading a location multiple times has no side-effects on any other byte location
+			  • reading or writing one byte location has no side effects on any other byte location.
+			* Peripheral slave component
+			 A peripheral slave component is also described as a peripheral slave. This specification recommends that a
+			 peripheral slave has an IMPLEMENTATION DEFINED method of access that is typically described in the data sheet for
+			 the component. Any access that is not defined as permitted might cause the peripheral slave to fail, but must
+			 complete in a protocol-correct manner to prevent system deadlock. The protocol does not require continued correct
+			 operation of the peripheral.
+			 In the context of the descriptions in this specification, peripheral slave is synonymous with peripheral, peripheral
+			 component, peripheral device, and device.
+		+ Interconnect component
+		 A component with more than one AMBA interface that connects one or more master components to one or more
+		 slave components
+		 An interconnect component can be used to group together either:
+		 • a set of masters so that they appear as a single master interface.
+		 • a set of slaves so that they appear as a single slave interface.
+		+ AXI transactions, and memory types
+		 When an AXI master initiates an AXI operation, targeting an AXI slave:
+		 • the complete set of required operations on the AXI bus form the AXI Transaction
+		 • any required payload data is transferred as an AXI Burst
+		 • a burst can comprise multiple data transfers, or AXI Beats.
+==========================================================================================================================================================
+==========================================================================================================================================================
+                            PART A: AMBA AXI3 & AXI4 Protocol Specification
+==========================================================================================================================================================
+==========================================================================================================================================================
+  1)  Global Signals
+
+        Signals         Source                Description                           
+        ACLK            Clock source          Global clock Signals                   
+        ARESETn         Reset source          Global reset singals, active low      
+    
+    ************CLock
+    On master and slave interfaces there must be no combinational paths between input and output signals
+    ************Reset
+    The reset signal can be asserted asynchronously, but deassertion must be synchronous with a rising edge of ACLK
+    During reset the following interface requirements apply
+      + a master interface must drive ARVALID, AWVALID & WVALID low
+      + a slave interface must drive RVALID and BVALID low
+      + all other signals can be driven to any value
+    The earliest point after reset that a master is permitted to begin driving ARVALID, AWVALID or WVALID high at a rising ACLK edge after ARESETn is high 
+
+  2)  Write address channel signals
+        Signals         Source                Description                           
+       ========================================================================================================================================================
+        AWID            Master                Write address ID => identification tag
+       ========================================================================================================================================================
+        AWADDR          Master                Write address => address => first transfer of a write burse transaction 
+       ========================================================================================================================================================
+        AWLEN           Master                Burst length => number of transfer in a burst => different between AXI3 & AXI4
+       ========================================================================================================================================================
+        AWSIZE          Master                Burst size => Maxinum number of bytes to transfer in each data transfer
+       ========================================================================================================================================================
+        AWBURST         Master                Burst type => this signal associated with AWSIZE to determine how the address for each data transfer 
+                                              within the burst is calculated
+       ========================================================================================================================================================
+        AWLOCK          Master                Lock type => Provide addition information about the atomic characteristics of the transfer. This changes between                                                                          AXI3 & AXI4
+       ========================================================================================================================================================
+        AWCACHE         Master                Memory type. This signals indicates how data transaction are required to progress through a system 
+       ========================================================================================================================================================
+        AWPROT          Master                Protection type. This signals indicates the previlege and sercurity level of the transaction, & whether the 
+                                              transaction is a data access or an instruction access
+       ========================================================================================================================================================
+        AWQOS           Master                Quality of service, QoS identifier sent for each write transaction. 
+                                              Implemented only in AXI4
+       ========================================================================================================================================================
+        AWREGION        Master                Region identifier. Permit a singel physical interface on a slave to be used for multiple logical interfaces
+                                              Implemented only on AXI4
+       ========================================================================================================================================================
+        AWUSER          Master                User signal. Optional User-defined signals in the write address channel. 
+                                              Supported only on AXI4                                   
+       ========================================================================================================================================================
+        AWVALID         Master                Write address valid. This signal indicates that the channel is signaling valid write address and control informastion
+       ========================================================================================================================================================
+        AWREADY         Slave                 Write address ready. This signal indicates that the slave is ready to accept an address and associated control signals
+       ========================================================================================================================================================
+
+  3)  Write data channel signals
+        
+        Signals         Source                Description                           
+       ========================================================================================================================================================
+        WID             Master                Write ID tag. This signal is the ID tag of the write transfer. Support only in AXI3
+       ========================================================================================================================================================
+        WDATA           Master                Write data
+       ========================================================================================================================================================
+        WSTRB           Master                Write strobes
+       ========================================================================================================================================================
+        WLAST           Master                Write last. This signal indicates the last transfer in a write burst
+       ========================================================================================================================================================
+        WUSER           Master                User signal. Optional User-defined singal in the write data channel. Support only in AXI4
+       ========================================================================================================================================================
+        WVALID          Master                Write valid. This signal indicates that valid write data and strobes are available
+       ========================================================================================================================================================
+        WREADY          Slave                 Write ready. This signal indicates that the slave can accept the write data
+       ========================================================================================================================================================
+ 
+ 4)  Write response channel signals
+
+        Signals         Source                Description                           
+       ========================================================================================================================================================
+        BID             Slave                 Resposnse ID tag. 
+       ========================================================================================================================================================
+        BRESP           Slave                 Write response. This signal indicates the status of the write transaction
+       ========================================================================================================================================================
+        BUSER           Slave                 User signal. Optional User-defined signal in the write response channel.
+                                              Support only in AXI4
+       ========================================================================================================================================================
+        BVALID          Slave                 Write response valid. This signal indicates that the channel is signaling a valid write response
+       ========================================================================================================================================================
+        BREADY          Maste                 Response ready. This signal indicates that the master can accept a write response
+       ========================================================================================================================================================
+
+5)  Read address channel signals  
+
+        Signals         Source                Description                           
+       ========================================================================================================================================================
+        ARID            Master                Read address ID 
+       ========================================================================================================================================================
+        ARADDR          Master                Read address
+       ========================================================================================================================================================
+        ARLEN           Master                Burst length. This signal indicates the exact number of each transfer in the burst
+                                              This changes between AXI3 and AXI4
+       ========================================================================================================================================================
+        ARSIZE          Master                Burst size. This signal indicates the size of each transfer in the burst
+       ========================================================================================================================================================
+        ARBURST         Master                Burst type. The burst type and the size information determine how the address for each transfer within the burst 
+                                              is calculated.
+       ========================================================================================================================================================
+        ARLOCK          Master                Lock type. This signal provides additional information about the atomic characteristics of the transfer
+                                              This changes between AXI3 and AXI4
+       ========================================================================================================================================================
+        ARCACHE         Master                Memory type. This signal indicates how transactions are required to progress throught a system
+       ========================================================================================================================================================
+        APROT           Master                Protection type. This signal indicates the priviledge and security level of the transaction and whether the 
+                                              transaction is a data access or an instruction access
+       ========================================================================================================================================================
+        ARQOS           Master                Quality of Service, QoS. Qos identifier sent for each read transaction. Implemented only in AXI4
+       ========================================================================================================================================================
+        ARREGION        Master                Region identifier. Permits a single physical interface on a slave to be used for multiple logical interfaces 
+                                              Implemented only on AXI4
+       ========================================================================================================================================================
+        ARVALID         Master                Read address valid. This signal indicates that the channel is signaling valid read address and control signals
+       ========================================================================================================================================================
+        ARREADY         Slave                 Read address ready. This signal indicates that the slave is ready to accept an address and associated control 
+                                              signals.
+       ========================================================================================================================================================
+  
+  6)  Read data channel signals
+  
+        Signals         Source                Description                           
+       ========================================================================================================================================================
+        RID             Slave                 Read ID tag. This signal is the identification tag for the read data group of signals generated by the slave
+       ========================================================================================================================================================
+        RDATA           Slave                 Read data
+       ========================================================================================================================================================
+        RRESP           Slave                 Read response. This signal indicates the status of the read transfer
+       ========================================================================================================================================================
+        RLAST           Slave                 Read last. This signal indicates the last transfer a read burst
+       ========================================================================================================================================================
+        RUSER           Slave                 User signal. Optional User-defined signal in the read data channel
+                                              Supported only on AXI4
+       ========================================================================================================================================================
+        RVALID          Slave                 Read valid. THis singal indicates that the channel is signaling the required read data
+       ========================================================================================================================================================
+        RREADY          Master                Read ready. This singals indicates that the master can accept the read data and response information
+       ========================================================================================================================================================
+  
+  7)  Low-power interface singals
+
+  
+        Signals         Source                Description                           
+       ========================================================================================================================================================
+        CSYSREG         Clock controller      System exit low-power state request. This signal is a request from the system clock controller for the peripheral 
+                                              to exit from a low-power state   
+       ========================================================================================================================================================
+        CSYSACK         Peripheral device     Exit low-power state acknowledgement. 
+       ========================================================================================================================================================
+        CACTIVE         Peripheral device     Clock active. This signal indicates that the peripheral requires its clock signal
+
+
+
+==========================================================================================================================================================
+AXI signal requirements
+==========================================================================================================================================================
+  A)  Clock and Reset
+      Clock *********************************************
+        All input signals are sampled on the rising edge of ACKLLK
+        All output signal changes must occur after the rising edge of ACLK
+        
+        On Master and Slave interfaces there  must be no combinatorial paths between input and output signals 
+      Reset *********************************************
+        Active Low reset signal, ARESETn 
+          * can be asserted asynchronously
+          * deassertion must be synchronous with a rising edge pf ACLK
+        During reset the following interface requirement apply:
+          * a master interface must drive ARVALID, AWVALID and WVALID
+          * a slave interface must drive RVALID and BVALID low
+          * all other signals can be driven to any value
+  B)  Transaction ID
+      Each transaction channel has its own transaction ID:
+        Transaction channel                   Transaction ID
+       ======================================================
+        Write address channel                 AWID
+       ======================================================
+        Write data channel, AXI3 only         WID
+       ======================================================
+        Write response channel                BID
+       ======================================================
+        Read address channel                  ARID
+       ======================================================
+        Read data channel                     RID
+       ======================================================
+  C)  AXI3 write data interleaving
+      Does not support on AIX4
+      AXI4: all write data must be provided in consercutive transfer
+      
+      Property: 
+        * a slave interface can accept interleaved write data with dofferent AWID values
+        * The write data interleaving depth is the number of address for which a slave can accept interleaved data
+        * When accessing a slave support write data interleaving, write data from different transaction that use the same AWID can not be interleaved.
+          ex: M1W100 --> M1W101 --> M1W101: is allowed  
+              M1W101 --> M1W100 --> M1W101: is not allowed 
+              Read this:
+              https://community.arm.com/developer/ip-products/processors/f/cortex-a-forum/6479/axi3-data-interleaving/23849#:~:text=%22For%20a%20slave%20that%20supports,S2%2CS3%2CS4).
+        * There is no mechanism that any AXI component can detemined if a slave supports write data interleaving. The samne idea for the write interleaving depth of a slave 
+        * For a slave that supports write data interleaving: the order of first data item of each transaction must be the same as the order of addresses for the transaction
+        * If two write transaction with different AWID value access the same or overlapping address then the AXI3 specfication does not define the processing order of those accesses.
+        A high-level protocol must ensure the correct order of transaction processing    
+        * A master interface that generates write data using only one AWID value generates all write data in the order in which it issues the write addresses. However, a master interface 
+        can interleave write data with different WID values if the slave interface has a write data interleaving depth greater than one
+        * To avoid possible deadlock, a slave interface that support write data interleaving must continuously accept interleaved write data. It must never stall the acceptance of write 
+       data in an attempt to change the order of the write data.
+       ******************************************************
+       Usage mode of data interleaving:
+        Write data interleaving => prevent stalling when the interconnection combnine multiple writte data targeting the same slave
+        ex: the interconnect might combine a write data stream form a low source with a write data stream from a fast source
+        -----> this will improve the system perfoemance
+        interleaving is tin AXI3 --> maximise the write data bandwidth using gaps in mster's write data availabe to pass tranfer from diffrent tranaction
+  D) Removal of write data interleaving
+    In AXI4 all write data for a transaciton must be provided in consevcutive tranfer in a wriet data channel
+    Reason: Most application tend to buffer up the write data at the master then pass it in a consecutive transfer, rather then try to interleacving transfer from different transaction
+    -------------> there would be no gaps 
+    -------------> WID is not supported in AXI4
+  E) Address structure
+    The AXI protocol is a burst-based. The master begin each burst by driving control information and the address of the first byte in the transaction to the slave. 
+    The slave must calculate 
+     the addresses of subsequent data in a burst.
+
+    A burst must not cross a 4K boundary:
+      a burst transfer must always satisfy following condition:
+        Start_address % 4096 == (Start_address + burst_size*burst_length) % 4096
+    -----------> This prevent a burst from crossing the boundary between 2 slaves. It also limit the number of address increment that a slave must support
+       ******************************************************
+      Burst length:
+        * ARLEN[7:0]
+        * AWLEN[7:0]
+         
+        AXI3 support 1 to 16 transfer for all burst types
+          Burst_length = AxLEN[3:0] + 1
+        AXI4 extend burst length support for INCR burst type from 1 to 256 transfer. The others remain the same
+          Burst_length = AxLEN[7:0] + 1
+      
+        Rules:
+          * For wrapping burst, the busrt length must be 2, 4, 8 or 16
+          * a burst must not across the 4K boundary  
+          * early termination of the burst is not supported (supported in AHB)
+        No componet can terminatet a burst early. However, to reduce the numver of data transfer in a write burst, a master can diable further writing by deasserting all write strobes.
+        ---------> But the master must complete the remaining trnsfer in a burst.
+        In a read burst, the master can discard the read data, but it must complete all the transers in the burst 
+        
+        Discarding read data that is not required can result in lost data when accessing a read-sensitive device such as a FIFO. When accessing sych a device, a master must 
+        use the a burst  
+        
+        that exactly matches the size of required data transfer.
+
+        In AXI4, transaction with INCR burst type and length greater than 16 can be converted to multiple smaller bursts, even if the transaction attribute indidcate that the transaction is 
+        Non-modifiable. In this case, the genearated burst must retain the same characteristics as the original transaction, the only exception is that:
+          * the burst length is reduced
+          * the address of the generated burst is adapted appropriately.
+    ----------------------------> The ability to break longer burst into multiple shoter burst is required for AXI3 compitability and might be needed for reduce the impact of longer bursts
+        on the QoS guarantees
+       ******************************************************
+      Burst size
+      The maximum number of bytes to transfer in each data transfer, or beat, in a burst:
+        ARSIZE[2:0]
+        AWSIZE[2:0]
+        Bytes in transfer: 2^(AxSIZE)
+
+        If AXI bus > burst size ---> AXI interface must determine from the transfer address which byte lands of the data bus to use for each data transfer
+        The size of any transfer must not exceed the data burst width
+       ******************************************************
+      Burst type(3)
+        1) FIXED: the address remain the same for every transfer in a burst
+                  Used for repeated accesses to the same location such as when loading or emptying a FIFO
+        2) INCR:  the address of each transfer in a burst is an increment of the address of previous transfer. The increment value depend on the size of the transfer.
+                  Used for accesses to normal sequential memory
+        3) WRAP:  A wrapping burst is similar to an incrementing burst, accept that the address wrap around a lower address if an upper address limit is reached
+                  Restriction:
+                  * the start address must aligned to the size of each transfer
+                  * the length of burst must be 2, 4, 8, or 16 transfers
+                  Behavior:
+                  * the lowest address <--- aligned to the total size of the data to be transferred:
+                    (size of each transfer in the burst) * (number of transfer in the burst) ~ Wrap boundary
+                  * the first transfer in the burst can use the address that is higher tahn the wrap boundary, subject to the restriction that apply to wrapping bursts.
+                  This means the address wrap for any WRAP burst for which the address is higher than the wrap boundary
+                  Used for cache line accesses.
+       ******************************************************
+     Lock accesses
+       AXI4 does not support looked transactions. However, an AXI3 implementation must support looked transactions. 
+
+       AXI4 remove support for looked transaction because:
+        * the major of components do not require looked transactions
+        * the implementation of looked transactions has a significant effort on:
+          - the complexity of the interconnection
+          - the ability to make QoS guarantees
+       When a master uses the AxLOCK signals for a transaction to show that it is a looked transaction then the interconnection must ensure that only that master can access the
+       targeted slave region, until an unlocked transaction from the same master completes. An arbiter within the interconnection must enforce this retristion.
+
+       Before a master start a locked sequence of either read or write transactions it must ensure that it has no other transactions waiting to complete
+
+       Any transaction with AxLOCK indicating a locked transaction forces the interconnect to lock the following transaction. Therefore, a locked sequence must always complete 
+       with a final transaction that does not have AxLOCK indicating a looked transaction. This final transaction is included in the locked sequence and effectively remove the
+       lock.
+
+       When complete a locked sequence, before issuing the final unclocking transaction , a master must ensure that all previous locked transactions are complete. it must then 
+       ensure that the final unlocking transaction has completed before it starts any further transactions.
+
+       The master must ensure that all transaction in a locked sequence have the same AxID value.
+
+       Locked accesses require the interconnect to prevent any other transactions occuring while the locked sequecnce is in progress, and can therefore have an impact on the 
+       interconnect performance. This specification recommends that locked accesses are only used to support legacy devices.
+
+       This specification recommneds the following restriction, but they are not mandatory:
+       * keep any locked transaction sequence within a single 4KB address region
+       * limit any locked transaction sequence to two transaction
+       
+      ******************************************************
+     Memory types
+
+      The AXI4 protocol introduces new names for the memory types identified by the memory types identified by the AxCACHE encoding
+      Some memory types have different encodings in AXI3 and these are shown in brackets
+      
+      The same memory type can have diffrent encodings on the read channel and write channel. This provides backwards compatibility with AXI3 AxCACHE definitions.
+
+      In AXI4 it sis legal to use more than one AxCACHE value for a particular memory type
+
+        ==================================================================================
+          ARCACHE[3:0]    AWCACHE[3:0]    Memory type
+          0000            0000            Device Non-bufferable
+          0001            0001            Device Bufferable
+          0010            0010            Normal Non-cacheable Non-bufferable
+          0011            0011            Normal NOn-cacheable Bufferable
+          1010            0110            Write-through No-allocate
+          1110 (0110)     0110            Write-through Read-allocate
+          1010            1110 (1010)     Write-through Write-allocate
+          1110            1110            Write-through Read and Write-allocate
+          1011            0111            Write-back No-allocate
+          1111 (0111)     0111            Write-back Read-allocate
+          1011            1111 (1011)     Write-back Write-allocate
+          1111            1111            Write-back Read and Write-allocate
+        ==================================================================================
+      
+      ******************************************************
+     Memmory type requirements
+      This section specifies the required bahavior of each of the memory types
+
+      1) Device Non-Bufferable
+        The required behavior for Device Non-bufferable memory is:
+         * The write response must be obtain the final destination
+         * Read data must be obtained from the final destination
+         * Transactions are Non-modifiable
+         * Read Must not be prefetched. Write must not be merged
+         * All Non-modifiable read and write transactions (AxCACHE[1] = 0) from the same ID to the same slave must remain ordered
+      
+      2) Device Bufferable
+        The required behavior for the Device Bufferable memory type is:
+        * The write response can be obtained form an intermediate point
+        * Write transactions must be made visible at the final destination in a timely manner
+        * Read data must be obtained form the final destination
+        * Transactions are Non-modifiable 
+        * Read must not be prefetched. Writes must not be merged
+        * All Non-modifiable read and write transactions (AxCACHE[1] = 0) from the same ID to the same slave must remain ordered
+        
+        Both device memory types are Non-modifiable. In this protocol specification the terms Device memory and Non-modifiable memory are interchangeable.
+
+        For read transactions ther is no difference in the required behavior for Device Non-Bufferable and Device Buffferable memory types
+      
+      3) Normal Non_cacheable and Non-bufferable
+      * The write reponmse must be obtained fromn the final destination
+      * Read data must be obtained from the final destination
+      * Transaction are Modifiable
+      * Write can be merged
+      * Read and write from the same ID to addresses that overlapped must remain ordered
+
+      4) Normal Non-Cacheable Bufferable
+      * The write reponse can be obtained from immediate point
+      * Write transaction must be made visible at the final destination in a timely manner <--- There is no mechanism to determine when a write transaction is visible at its
+        final destintaion 
+      * Read data must be obtained either:
+        - From the final destination
+        - From a write transaction that is progressing to its final destination
+        If read data is obtained from a write transaction:
+        - It must be obtained from the most recent version of the write
+        - the data must not be cached to service a later read
+      * Transaction are modifiable
+      * Write can be merged
+      * Read and write transactionis to same ID to addresses that overlap must remain ordered
+    
+      For a Normal Non-cacheable Bufferable read, data can be obtained from a write transaction that is still progressing to its final destination. This is indistinguishable 
+      from the read and write transaction propagating to arrrive at the final destination at the same time. Read data return in this manner does not indicate that the write \
+      transaction is visible at the final destination.
+
+      5) Write-through No-allocate
+      * The write reponse can be obtained from an intermmidate point
+      * Write transactions must be made visible at the final destination in a timely manner
+      * Read data can be obtained from an immediate cached copy ???????????????????????????????????????????????????????????????????????
+      * Transaction are modifiable
+      * Read can be prefetched
+      * Write can be merged
+      * A cache lookup is required for read and write transactions  
+      * Read and write transaction from the same ID to addresses that overlap must remain ordered
+      * The No-allocate attribute is an allocation hint, that is, it is a recommendation to the memory system that, for performance reasons, these transaction are not allocated. 
+      However, the allocation for read and write transactions are not prohibited
+
+      6) Write-through Read-allocate
+      The same as Write-through No-allocate but the allocation hint is:
+      * allocation for read transaction is recommended
+      * allocation for write transaction is not recommended
+      
+      7) Write-through Write-allocate
+      The same as Write-through No-allocate but the allocation hint is:
+      * allocation for read transaction is not recommended
+      * allocation for write transaction is recommended
+
+      8) Write-through Read and Write-allocate
+      The same as Write-through No-allocate but the allocation hint is:
+      * allocation for read transaction is recommended
+      * allocation for write transaction is recommended
+
+      9) Write-back No-allocate
+      * The write reponse can be obtained from an intermmidate point
+      * Write transaction are not required to be made visible at the final destination
+      * Read data can be obtained from an intermmidiate cached copy
+      * Transaction are modifiable
+      * Reads can be prefetched
+      * Write can be merged 
+      * A cache lookup is required for read and write transactions
+      * Read and write transactions from the same ID to addresses that overlap must remain ordered
+      * The No-allocate attribute is an allocation hint, that is, it is a recommendation to the memory system that, for performance reasons, these transaction are not allocated
+      However, the allocation for read and write transactions are not prohibited
+
+      10) Write-back Read allocate
+      11) Write-back Write allocate
+      12) Write-back Read and Write-allocate
+
+      ******************************************************
+     Mismatched memory attributes
+      
+        Multiple agent that are accessing the same area of memory, can use mismatched memory attributes. However, for functional correctness, the following rules must be obeyed:
+        * All masters accessing the same area of memory must have a consistent view of the cacheability of that area of memory at any level of hierachy. The rules to be applied are:
+          - Address region not cacheable: all master must use transaction with both AxCACHE[3:2] deasserted
+          - Address region cacheable: all master must use transaction with either AxCache[3:2] asserted
+        * Different masters can use different allocation hints
+        * If an addressed region is Normal Non-Cacheable, any master can access it using a Device memory (Non-modifiable) transaction
+        * If an addressed region has the Bufferable attribute, any master can access it using transactions that do not permit bufferable behavior
+     
+      ******************************************************
+     Changing memory attributes   
+      The attributes for a particular memory region can be changed from one type to another incompatible type.
+      This requires a suitable progress to perform the change:
+      1) All master stop accessing the region
+      2) A single masters perform any required cache maintainance operation     ????????????
+      3) All master restart accessing the memory region, using new attributes
+    
+      ******************************************************
+    Access permissions
+      AXI provides access permission signals that can be used to protect against illegal transactions:
+      * ARPROT[2:0]
+      * AWPROT[2:0]
+
+      Protection encoding
+      ===============================================
+      AxPROT  VALUE    FUNCTION
+      ===============================================
+      [0]     0        Unprivileged access 
+              =======================================
+              1        Privileged access
+      ===============================================
+      [1]     0        Secure access
+              =======================================
+              1        Non-secure access
+      ===============================================
+      [2]     0        Data access
+              =======================================
+              1        Instruction access
+      ===============================================
+
+      Unprivileged and privileged
+        An AXI master might support more than one level of operating privilege, and extend this concept of privileged to memory access
+
+        Some proccessor might support multiple levels of privilege, see the documentation for the selected processor to determined the mapping to AXI privileged levels.
+        The only distintion AXI can provide is between privileged and unprivileged access
+
+      Secure and Non-secure
+        An AXI master might support Serure and Non-secure operating states, and extend this concept of security to memory access
+
+        This bit is defined so that when it asserted the transaction is identified as Non-secure
+        This is consistent with other signaling in implementations of the ARM security extentions
+
+      Instruction or data
+        The AXI protocol defined this indication as a hint. It is not accurate in all cases. For example, where a transaction contains a mix of instruction and data items.
+        This specification recommends that a master set AxPROT[2] low, to indicate a data access unless the access is specifically know to be an instruction access.
+    
+      ******************************************************
+    Legacy considerations
+     AXI4 introduces additional requirements for the handling of some of the AxCACHE memory attributes
+     In AXI4, all the device transaction using the same ID to the same Slave must be ordered with respect to each other
+     * This is not a explicit requirement for AXI3. Any AXI4 component that relies on this behavior cannot be connected to an AXI3 interconnect that does not exhibit this behavior
+     * ARM belives that most implemented AXI3 interconnects support the required AXI4 behavior
+
+     This specification strongly recommends that any new AXI3 design implements the AXI4 requirement
+     For AxCACHE bit names and memory type names it is required that AXI4 uses the new terms, AXI3 components can use either the AXI3 and AXI4 names
+     
+      ******************************************************
+    Use of Device memory types
+      The specification supports the combined use of Device Non-buffered and Device buffered memory types to force write transactions to reach their final destination and ensure that 
+      issuing master knows when the transaction is visible to all other masters
+
+      A write transaction that is marked as Device Buffered is required to reach its final destination in a timely manner. However, the write response for the transaction can be 
+      signaled by a by an intermidiate buffer. Therefore, the issuing master cannot know when the write is visible to all other masters.
+
+      If a master issues a Device buffered write transaction, or stream of write transactions, followed by a Device Non-buffered write transaction, and all transaction use the same 
+      AXI ID, the AXI order requirement force all of the Device buffered write transactions to reach the final destination before a response is given to the Device Non-buffered 
+      transaction. Therefore, the response to the Device Non-buffered transaction indicates that all the transaction visible to all masters.
+
+      A Device Non-buffered transaction can only guarantee the completion of Device Buffered transaactions that are issued with the same ID, and are to the same slave devices
+
+      ******************************************************
+    QoS signaling
+      QoS interface signals:
+        AWQOS[3:0]
+        ARQOS[3:0]
+        The protocol does not specify the exact use of the QoS identifier. This specification recommnends that AxQOS is used as a priority indicator for the associated write or read 
+        transaction. A higher value indicates a high level priority transaction
+
+        A default value of 0b0000 indicates that the interface is not participating in any QoS scheme
+
+        Additional interpretations of QoS identifier can be used
+
+      Master considerations
+        A master can produce its own QoS values, and if it can produce multiple streams of traffic it can choose different QoS values for the different streams
+
+        Support for QoS requires a system level understanding of the QoS scheme in use, and colloboration between all participating components. For this reason, this specification
+        recommends that a master components includes some programmability that can be used to control the exact QoS values used for any given scenario 
+
+        If a master component does not support a programmable QoS scheme it can use QoS values that represent the relative priorities of the transaction it generates. These values 
+        can then be mapped to alternative system level of QoS value if appropriate
+
+        A master can not produce its own AxQOS values must use the default value
+
+        This specification expect that many interconnect component implementaions will support programmable registers that can be used to assign QoS value to connected masters. 
+        These values replace the QoS values, either programmed or default, supplied by the masters.
+  
+      System considerations:
+        QoS signaling as defined in AXI4 can  be used with any compatible system level QoS methodology
+
+        The default system level implementation of QoS is that any components with a choice of more than one transaction to process selects the transaction with higher QoS value 
+        to process first. This selectin only occurs when there is no other AXI constrain that requires the transaction to be processed in a particular order
+
+        This means that the AXI ordring rules take the precedence over ordering for QoS purposes
+  
+        More sophisticated QoS schemes that are compatible with this default scheme can be implemented.
+
+      ******************************************************
+    Multiple region signaling 
+      Additional interface signal
+        Optionally, AXI4 interface signal set can be extended to support two 4-bit region identifiers:
+          AWREGION[3:0]
+          ARREGION[3:0]
+        The 4-bit identifier can be used to uniquely identify up to 16 regions. The region identifier can provide a decode of higher order address bits. The region identifiers must 
+        remain constant within any 4Kbyte address space.
+        The use of region identifiers means a singal physical interface on a slave can provide multiple logical interfaces, each with different location in the system address map.
+                                      means that a slave does not have to support the address decode between the different logical interfaces.
+
+        This protocol expects an interconnect to produce AxREGION signals when performing the address decode function for a single slave that has multiple logical interfaces. If a
+        slave only has a single physical interface in the system address map, the interconnect must use the default AxREGION values.
+      
+        There are a number of usage models for the region identifier, including but not limited to the following:
+          * A peripheral can have its main data path and control registers at different locations in the address map, and be access throught a single interface without the need of 
+          the slave to perform an address decode.
+          * A slave can exhibit different behaviors in different memory regions. For example, a slave might provide read and write access in one region, but read only access in another 
+          region
+        A slave must ensure the correct protocol signaling and the correct ordering of transactions are maintained. A slave must ensure that it provides the responses to two transactions
+        to different region with the same AXI ID in the corerct order.
+
+        A slave must also ensure the correct protocol signaling for any values of AxREGION. If a slave implemented less than 16 regions, then the slave must ensure the correct protocol
+        signaling on any attempted access to an unsupported region. For example, a slave might ensure this by:       
+          * providing an error response for any transaction that accesses an unsupported region
+          * alliasing supported regions across all unsupported regions, to ensure a protocol-compliant response is given for all accesses
+        The AxREGION signals only provide an address decode of the existing address space that can be used by the slaves to remove the need of an address decode function. The signals
+        does not create new independent address spaces, AxREGION must only be present on an interface that is downstream of an address decode function.
+ 
+      ******************************************************
+    User-defined signaling
+        Optionally, the AXI4 interface signal set can include a set of User-defined signals, called user-signals, on each AXI4 channel.
+
+        Generally, this specification recommends that the User signals are not used, because the AXI protocol does not define the function of these signals and this can lead to
+        interoperability issues if two components use the same User signals in an incompatiple manner
+
+      Signal naming
+        The User signal names defined for each AXI4 channel are:
+            AWUSER  
+            ARUSER
+            WUSER
+            RUSER
+            BUSER
+      Usage considerations  
+        When user signal are implemented it is not required that User signals are supported on all channels. That is, the design decision whether to include user signal is made
+        independently for each channel.
+
+        This specification recommends includeing User signals on an interconnect, however, there is no requirement to include them in master or slave
+
+        This specification recommends that interconnect components include support for User signals, so that they can be passed between master and slave components.
+==========================================================================================================================================================
+==========================================================================================================================================================
+                            PART A: AMBA AXI3 & AXI4 Protocol Specification
+==========================================================================================================================================================

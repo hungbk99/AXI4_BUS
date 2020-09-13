@@ -1,0 +1,114 @@
+#########################################################################################################                                                            
+                                       AMBA Arbiter
+#########################################################################################################                                                            
+
+**************************************************
+1.1 Overview
+**************************************************
+  The AMBA specification is a multi-master bus standard. As a result, an arbiter is needed to ensure that 
+  only one bus master has access to the bus at any particular point in time.
+  Each bus master can request the bus; the arbiter decides that which has the highest priority and issues 
+  a grant signal accordingly.
+
+  Every sytem must have a default bus master which is granted the use of the bus during reset, when no 
+  other bus master require the bus.
+**************************************************
+1.2 SIgnal description  
+**************************************************
+  
+  ======================================================================================================
+  Name          Type        Description
+  ======================================================================================================
+  AGNTARM       Out         Grant signal to the AREM processor. When High this signal indicates that 
+                            the ARM bus master is currentlty the highest priority master requesting the 
+                            bus. This singal change during the Low phase of BCLK and remain Valid 
+                            through the High phase.
+  ======================================================================================================
+  AGNTTIC       Out         Grant signal to test the interface conteroller. When High this signal 
+                            indicates that the test interface controller is the highest priority master 
+                            requesting the bus. This signal change dueing the Low ohase of BCKL and 
+                            remain Valid during the High phase. 
+  ======================================================================================================
+  AGNT001       Out         Grant signal to bus master 001. When High, this signal indicates that 
+                            this bus master currently the highest master requesting the bus. This signal 
+                            change during the Low phase of BCLK and remain Valid during the High phase
+  ======================================================================================================
+  AGNT002        Out         Grant signal to bus master 002. When High, this signal indicates that 
+                             this bus master curently the highest master requesting the bus. This signal
+                             change during the Low phase of BCLK and remain Valid during the High phase
+  ======================================================================================================
+  AREQARM        In          Request from ARM processor indicating that it requires the bus. This signal
+                             must be set up to the falling edge of BCLK
+  ======================================================================================================
+  AREQTIC        In          Request from test interface controller indicating that it requires the bus.
+                             This signal must be set up to the falling edge of BCLK
+  ======================================================================================================
+  AREQ001        In          Request from a bus master 001 indicating that it requires the bus. This 
+                             signal must be set up to the falling edge of BCLK
+  ======================================================================================================
+  AREQ002        In          Request from a bus master 002 indicating that it requires the bus. This 
+                             signal must be set up to the falling edge of BCLK
+  ======================================================================================================
+  BCLK           In          System (Bus) clock. This clock times all bus transfer. The clock has two 
+                             distinct phase: High and Low
+  ======================================================================================================
+  BnRES          In          This signal is active Low and indicates the reset status of the bus. It is 
+                             driven by the reset controller 
+  ======================================================================================================
+  BLOK           In          A shared bus lock signal driven by the currently granted bus master is used
+                             to indicate that the current transfer is indivisible from the following 
+                             transfer, and that no other master should be granted the bus.
+  ======================================================================================================
+  BWAIT          In          This signal is indicated by the selected bus slave to indicate whether the
+                             current transfer may complete. If BWAIT is High, a futher bus cycle is 
+                             required. If BWAIT is Low, the transfer may complete in the current bus cycle
+                             
+                             When no bus transfer is taking place, this signal is driven by the bus 
+                             decoder
+                             
+                             This signal is driven in the Low phase of the BCLK, and is valid before 
+                             the rising edge of BCLK 
+ 
+                             BWAIT is used by the Arbiter block to determine a turnaround cycle in 
+                             happening on the bus
+  ======================================================================================================
+  PAUSE          In          This sinal allow the processor system to enter a low-power, wait for 
+                             interrupt state, when the system does not require the processor the active
+  ======================================================================================================
+  
+Note: When a system only have the ARM and the Test interface controller as potential bus master, the 
+      unused AREQxxx lines must be tied Low
+
+**************************************************
+1.3 Signal Timing
+**************************************************
+  Arbiter produce signals on a cycle-by-cycle basic, showing which bus master has the highest priority.
+  However, the bus mastership does not change every cycle, a new bus master only grant when:
+    * AGNT is High, indicates that the bus master is currently the highest priority
+    * BWAIT is Low, indicates that the current transfer has completed.
+
+  Each bus master is responsible for monitoring these signals to determine when it is granted use of 
+  the bus
+
+**************************************************
+1.4 Arbitration Priorities
+**************************************************
+
+  During reset, when BnRES is Low, the arbiter grants use of the bus to the default bus master, and 
+  hold all other grant signals inactive
+  
+  The following arbitration priorities are implemented:
+    Highest:  Test interface controller
+              Bus master 1
+              Bus master 2
+    Lowest:   ARM processor
+
+ The default bus master-that is, the test interface controller- is granted use of the bus during standby,
+ as indicate by PAUSE being High, and when no other master requesting the bus.
+            
+ BWAIT is used by the arbiter to detemine when a turnaround cycle is happenning. On a turnaround cycle, 
+ when a new grant has occur on the previous cycle BLOK will not be valid on time, and hence should not 
+ be sampled
+**************************************************
+  
+      

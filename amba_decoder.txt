@@ -1,0 +1,224 @@
+#######################################################################################################
+                                          AMBA Decoder
+#######################################################################################################
+
+*****************************************
+1.1 Overview
+*****************************************
+  
+  The decoder perform 3 functions:
+    * It generate the slave select signals (DSELx) for each of the bus slaves, indicating that a transfer 
+      to that slave is required
+    * It generates the slave response signals (BWAIT, BLAST and BERROR) during Address only transfers, 
+      when no slave is selected 
+    * It can act as a simple protection unit which prevent attempts to access an illegal or protected area 
+      of the memory map
+ 
+  Two implemtation of the decoder are provided:
+    * Decode with decode cycles. This is the defauilt model. This implementation automatically insert a 
+      decode cycle
+      - At the start of a non sequential transfer
+      - on a sequential transfer when BLAST has been asserted
+      - When 1 KB memory boudaries has been reached
+    ===> This decoder is used in a fast systems when the decoder might not have enouygh time to decode the 
+    address and assert ther corresponding DSEL signal in a single clock High phase.
+  
+    * Decoder without decode cycles. This implementation atttempts to decode the address bus on every cycle,
+      and there for only suitable for slow systems where this can be safely achieve
+
+  Every system must have a default bus master which is granted use of the bus during the reset, when no other
+  bus master requiring the bus.
+
+*****************************************
+1.2 Signal Description
+*****************************************
+
+   ====================================================================================================
+    Name              Type          Description
+    BA[31:0]          In            This is the system address bus, which is driven by the bus master
+    Address Bus                     The addresses changes during the High phase before the transfer to 
+                                    which they transfer, and remain valid until the last High phase of 
+                                    the transfer
+   ====================================================================================================
+    BCLK              In            Sytem (bus) clock. This clock times all bus transfer
+    Bus clock
+   ====================================================================================================
+    BERROR            InOut         A transfer error is indicated by the slected bus slave or decoder
+    Error                           using the BERROR signal  
+    Response                        When BERROR is high, a transfer error has occured. When BERROR is
+                                    Low, the transfer is successful. This signal is also used in 
+                                    combination with the BLAST signal to indicate a bus retract 
+                                    operation
+
+                                    When no bus transfer is taking place, this signal is driven by the
+                                    decoder.
+
+                                    This signal is driven in the LOW phase of BCLK and is Valid before
+                                    the rising edge of BCLK
+   ====================================================================================================
+    BLAST             InOut         This signal is driven by the selected bus slave or decoder to 
+    Last                            indicate whether the current transfer should be the last of a burst 
+    Response                        sequence. When BLAST is High, the next bus transfer must allow  
+                                    sufficient time for address decoding. When BLAST is Low, the next 
+                                    transfer may continue a burst sequence. This signal is also used in
+                                    combination with the BERROR signal to indicate a bus retract 
+                                    operation
+
+                                    When no bus transfer is taking place, this signal is indicated by
+                                    the decoder
+
+                                    This signal is driven in the Low phase of BCLK and is valid before 
+                                    the rising edge of BCLK
+   ====================================================================================================
+    BnRES             In            This active Low signal indicate the reset status ofg the bus and is           
+    Reset status                    driven by the reset controller
+   ====================================================================================================
+    BTRAN[1:0]        In            These signal indicate the type of the next transaction, which may 
+    Transfer type                   be address only, non-sequential or sequential
+                                    These signal are valid during the phase High before the transfer to 
+                                    which they refer
+   ====================================================================================================
+    BWAIT             InOut         This signal is driven by the selected bus slave or decoder to   
+    Wait                            indicate whether the current transfer may complete. If BWAIT is high
+    Response                        a further bus cycle is required. If BWAIT is low, the transfer may 
+                                    be completed in the current bus cycle.
+
+                                    When no bus transfer is taking place, this signal is driven by the
+                                    bus decoder (this block)
+
+                                    This signal is driven in the Low phase of BCLK and is valid before 
+                                    the rising edge of BCLK
+   ====================================================================================================
+    DSELx
+    Slave select      Out           This signal indicates that a slave devide is selected and data 
+                                    transfer is required. There is a DSEL signal for each bus slave 
+
+                                    This signal becomes valid during the HIGH phase before the data is 
+                                    required , and remain active until the last phase HIGH of the 
+                                    transfer
+   ====================================================================================================
+    BSIZE[1:0]        In            This signal indicate the size of the transfer which may be byte, 
+    Transfer size                   halfword or word. They are only neeeded by the decoder with decode
+                                    cycle implemented. They have same timing as the address bus
+   ====================================================================================================
+    ReMap             In            When Low, this force the internal memory to be replaced by the 
+                                    external memory. The external memory should contain the system's
+                                    start up program (boot ROM/BIOS). in normal opreration this signal 
+                                    is High
+   ====================================================================================================
+  
+
+*****************************************
+1.3 Memory Map
+*****************************************
+  The decoder controls the memory system and generate a slave select signals for every memory region.
+ 
+  The ReMap signal is used to provide a different memory map at the reset, when ROM is required at 
+  address 0, and during normal operation, when RAM maybe used at address 0
+
+  The ReMap signal is provided by a remap and pause peripheral, which drive ReMap Low at reset. This 
+  signal only High after a particular address in the remap and pause peripheral is accessed
+
+
+*****************************************
+1.4 Decoder Function
+*****************************************
+
+  At the start of every transfer on the bus the decoder can perform a number of actions.
+  The decoder is able to determine when a transfer is about to start at by examining the 
+  BWAIT signal, which will be Low when the transfer is completing
+
+  The action the decoder may take depend on the type of transfer:
+    * Nonsequential transfer:
+      The decoder insert a single decode cycle to allow the address bus to stabilize and the new address
+      to be decoded. For the first cycle, the decoder drive the BWAIT HIGH, and negates all the DxSEL 
+      signals. In the second cycle, the decoder assert the appropriate DSELx, and the selected slave 
+      become responsible for driving the slave transfer response. This is the case for the decoder 
+      that implement the decode cycles, otherwise the decoder asserts the DSELx signal during the first 
+      cycle.
+    
+    * Sequential transfer with BLAST low:
+      The decoder drives the appropriate DSELx signal, and the selected slave is reaponsible for driving
+      the slave transfer response. 
+    
+    * Sequential transfer with BLAST High: 
+      The decoder treats this case in the same way as a nonsequential transfer 
+    
+    * Address-only transfer:
+      The decoder does not generate any DSELx signals and drive the slave transfer response of BWAIT Low
+  =======================================
+  1.4.1 Slave response
+  =======================================
+    The decoder control block monitors bus activity, and determine when a transfer is required to a slave
+    device. When a transfer is required, a signal is asserted to the address decoder block, which in turn
+    generates a lave select signal depending on the address of the bus
+    
+    When no slave is selected, the decoder must provide the slave reponse signals (BWAIT, BLAST and BERROR)
+    in order for the bus to remain synchronised. The decoder will drive these signals during the address-only 
+    cycle (as indicated by the BTRAIN[1:0] signal which are driven by the bus master), and the decode cycle,
+    which occurs at any start cycle of nonsequential transfer and may also be requested by a slave device 
+    using the BLAST signal.
+
+    The decoder with decode cycle will provide the following responses:
+      
+    =========================================================  
+      Condition                   BWAIT     BLAST     BERROR
+    =========================================================  
+      Address-only cycle          0         0         0
+    =========================================================  
+      Error                       0         0         1
+    =========================================================  
+      Decode cycle                1         0         0
+    ========================================================= 
+    The decoder without decode cycle does not provide the decode cycle response
+
+    When a slave is selected, it must provide a response on the BWAIT, BERROR and BLAST signals.
+
+  ==============================================
+  1.4.2 Implementation of DecError and DecLast
+  ==============================================
+    These two internal decode signals are required by the state machine. DecErroi is used by both 
+    state machines, with and without decode cycles. It is asserted when an access is made to the 
+    undefined region.
+    DecLast is only needed by the state machine with decode cycle. It is asserted when the last address
+    in a 1KB boundary is accessed, and is dependent on the size of the transfer
+    
+  ==============================================
+  1.4.3 Decode control state machine
+  ==============================================
+    There are two possible implementations of the decoder, depending on the performance requirement of the
+    system design. One implementation inserts decode cycles, and the other does not. The state machine for 
+    the decoder with decode cycles have an extra cycle, DECODE.
+
+    The decoder state machine is clocked off the falling edge of the bus clock, BCLK. There for it is needed
+    for the decoder to use latched version of the BWAIT and BLAST signals, WAIT + RETNEXT is equivalent to 
+    LBWAIT.
+
+    The decoder will drive an address-only cycle response when in the ADDRONLY state, a Decode cycle response 
+    when in the DECODE state. The decoder will nor drive the slave response signals in the SLAVESEL state;
+    this is the responsibility of the selected slave.
+
+    ********************************************
+    State description:
+    =======================================================================================================================
+      Decoder state machine with decode cycles
+    =======================================================================================================================
+      DECODE    Decode cycle. The DECODE state is only entered for a single cycle. Assuming that there is no
+                reset condition and that DecError is not asserted, the next state is SLAVESEL
+
+      SLAVESEL  Slave transfer. The SLAVESEL state may be entered either from the DECODE or the ADDRONLY state.
+                
+                Unless there is a reset condition, the state machine will remain in the SLAVESEL state when BWAIT 
+                is high. When BWAIT is Low, the next state is ADDRONLY if the transfer type is address-only, DECODE
+                if the transfer type is nonsequential, or if BLAST or DecLast have been asserted. However, if the transfer 
+                type is sequential and BLAST or DecLast have not been asserted, the next state remains as SLAVESEL.
+
+      Error     Error transfer, the Error state is entered when DecError is asserted.
+          
+                Unless there is a reset condition, the state machine remnains in Error state when the transfer type 
+                is sequential and DecLast is not asserted. The next state is ADDRONLY if the transfer type is address-only,
+                or DECODE if the transfer type is nonsequential, or if it is sequential and DecLast is asserted.
+    =======================================================================================================================
+
+      
+    

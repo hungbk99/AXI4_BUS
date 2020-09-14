@@ -718,7 +718,15 @@ AXI signal requirements
 							A3: Single interface requirements
 ==========================================================================================================================================================
 ==========================================================================================================================================================
+	======================================================================
+	======================================================================
+	A3.2 Basic read and write transactions
+	======================================================================
+	======================================================================
+	
+	======================================================================
 	3.2.1 Basic read and write transactions
+	======================================================================
 	This section defines the basic mechanisms for AXI protocol transactions. The basic mechanisms are:
 	* The handshake process
 	* The Channel signaling requirements
@@ -738,7 +746,9 @@ AXI signal requirements
 		
 		If READY is asserted, it is permitted to deassert READY befire VALID is asserted.
 		
+	======================================================================	
 	3.2.2	Channel signaling requirements
+	======================================================================	
 		The following sections define the handshake signals and the handshake rulrs for each channel:
 		
 		*************************************
@@ -809,5 +819,20 @@ AXI signal requirements
 		is able to accept read data immediately, whenever it starts a read transaction.
 		
 		The slave must assert the RLAST signal when it is driving the final read transfer in the burst.
-		
-		
+	
+	======================================================================
+	======================================================================	
+	A3.2 Relationship between the channels
+	======================================================================
+	======================================================================	
+	The AXI protocol requires the following relationships to be maintained:
+	* A write response must always follow the last write transfer in the write transaction of which it is a part.
+	* Read data must always follow the address to which the data relates
+	* Channels handshakes must conform to the dependencies 	
+	======================================================================	
+	3.3.1 Dependenceies between channel handshake signals
+	======================================================================
+	To prevent a deadlock situation, the dependency rules that exits between the handshake signals must be observed.
+	* The VALID signal of AXI interface sending information must not be dependent on the READY signal of the AXI interface receiving that information.
+	* An AXI interface that is receiving information can wait until it detects a VALID signal before it asserts its corresponding VALID. This can result
+	in a more efficient design.

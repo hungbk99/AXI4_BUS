@@ -177,7 +177,7 @@
   ==============================================
   1.4.2 Implementation of DecError and DecLast
   ==============================================
-    These two internal decode signals are required by the state machine. DecErroi is used by both 
+    These two internal decode signals are required by the state machine. DecError is used by both 
     state machines, with and without decode cycles. It is asserted when an access is made to the 
     undefined region.
     DecLast is only needed by the state machine with decode cycle. It is asserted when the last address

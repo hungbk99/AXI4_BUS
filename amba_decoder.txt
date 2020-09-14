@@ -219,6 +219,38 @@
                 is sequential and DecLast is not asserted. The next state is ADDRONLY if the transfer type is address-only,
                 or DECODE if the transfer type is nonsequential, or if it is sequential and DecLast is asserted.
     =======================================================================================================================
-
+      Decoder state machine without decode cycles
+    =======================================================================================================================
+      ADDDRONLY No transfer. This state is entered when no data transfer is occurring on the bus. This state is als entered 
+                during a reset condition.
+                
+                The ADDRONLY state is only exited when a transfer is about to occur, as indicated by the BTRAN signals. If 
+                DecError is asserted, the next state is ERROR, if it is not asserted, the next state is SLAVESEL.
+                
+      SLAVESEL  Slave transfer. The SLAVESEL state may be entered from either the ERROR or the ADDRONLY state.
       
+                Unless there is a reset condition, the state machine will remain in the SLAVESEL state when BWAIT is High.
+                When BWAIT is Low, the next state is ADDRONLY if the transfer type is address-only, or ERROR if DecError 
+                has been asserted. However, if DecError has not been asserted, the next state remains as SLAVESEL.
+                
+      Error     Error transfer. The ERROR state is entered when DecError is asserted.
+          
+                Unless there is a reset condition, the state machine remains in the ERROR sate when the tranfer is 
+                sequential or nonsequential, and DecError is asserted. The next state is ADDRONLY if the transfer type is 
+                address-only, or SLAVESEL if the transfer type is sequential or nonsequential and DecError is not asserted.
+    =======================================================================================================================  
+  
+  ==============================================
+  1.4.4 Address decoder
+  ==============================================
+    When the decoder control section indicates that a slave transfer is required, the address decoder generates a slave 
+    select signal, depending on the address on the bus. 
     
+    The address decoder section must be changed to implement a different memory map.
+    
+    Signals, other than the address bus, may be used to affect the address map; ReMap is an example of such a signal.
+
+  ==============================================
+  1.4.5 Reset operation
+  ==============================================    
+    During a reset condition, when BnRES is Low, the decoder control block asynchronously removes all slave select signals.

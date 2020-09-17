@@ -1,0 +1,253 @@
+==================================================
+A4  Transaction Attributes
+==================================================
+    *****************************************
+        Transaction type and attributes
+    *****************************************
+    Slaves are classified as either:
+    * Memory slave:
+        A memory slave is required to handle all transaction types correctly
+    * Peripheral Slave:
+        A peripheral slave has an Impelementation Defined method of access. Typically, this is defined in the component data sheet, that describes 
+        the transaction types that the slave handles correctly
+
+        Any access to the peripheral that is not part of the Implementation Defined method of access must complete, in compliance with the protocol. 
+        However, once such an access has been made, there is no requirement that the peripheral slave continues to operate correctly. It is required
+        to continue to complete further transactions in a protocol compliant manner.
+
+        * Compliant competion of all transaction types is required to prevent system deadlock, however, continued correct operation of the peripheral 
+          is not required.
+        * Because a peripheral slave is required to work correctly only for a defined method of access, it can have a significantly reduced set of 
+          interface signals.
+
+    The AXI protocol defines a set of transaction attributes that support memory and peripheral slaves. The ARCACHE and AWCACHE signals specify the 
+    transaction progresses through the system. They control:
+    * How a transaction progresses through the system.
+    * How any system-level caches handle the transaction.
+    
+                .
+                .
+                .
+                .
+                .
+                .
+    
+    *****************************************
+        A4.7 Access Permissions:
+    *****************************************
+    AXI provies access permission signals that can be used to protect against illegal transactions:
+    * ARPROT[2:0]: read access
+    * AWPROT[2:0]: write access
+    
+                ========================================
+                AxPROT    Value    Function
+                ========================================
+                [0]       0        Unprivileged access
+                          ------------------------------  
+                          1        Privileged access
+                ========================================
+                [1]       0        Secure access
+                          ------------------------------
+                          1        Non-secure access
+                ========================================
+                [2]       0        Data access
+                          ------------------------------
+                          1        Instruction access
+                ========================================   
+
+    The protection attributes are:
+    * Unprivileged or privileged:
+                An AXI master might support more than one level of operating priviledge, and extend this concept of privilege to memory access.
+                AxPROT[0] identifies an access as unprivileged or privileged.
+            
+                Some processor support multiple levels of priviledge, see the documentation for the selected processor to determine the mapping
+                to AXI privileged levels. The only distinction AXI can provide is between privileged and unprivileged access.
+    * Secure and Non-secure:
+                An AXI master might support Secure and Non-secure operating states, and extend this concept of security to memory access. AxPROT[1]
+                defined an access as Secure or Non-secure.
+
+                This bit is defined so that when it is asserted the transaction is identified as Non-secure, This is consistent with other signaling
+                in implementations of the ARM Security Extensions.
+    * Instruction or data:
+                This bit indicates whether the transaction is an instruction access or a data access.
+
+                The AXI protocol defines this indication as a hint. It is not accurate in all cases, for example, where a transaction contains a mix
+                of instruction and data items. This specification recommends that a master sets AxPROT[2] LOW, to indicate a data access is specifically
+                known to be an instruction access.
+   
+==================================================
+A5  Multiple Transactions
+==================================================
+
+    *****************************************
+        A5.1 AXI transaction identifiers
+    *****************************************
+    The AXI protocol includes AXI ID transaction identifiers. A master can use these to identify separate transactions that must be returned in order.
+    
+    All transactions with a given AXI ID value must remain ordered, but there is no restriction on the ordering of transactions with different ID values.
+    This means a single physical port can support out-of-order transactions by acting as a number of logical ports, each of which handles its transactions
+    in order.
+
+    By using AXI IDs, A master can issue transactions without waiting for earlier transactions to complete. This can improve system performance, because
+    it enables parallel processing of transactions.
+
+    * There is no requirement for slaves or masters to use AXI transaction IDs. Masters and slaves can process one transaction at a time, meaning 
+      transactions are processed in the order they are issued.
+
+    * Slaves are required to reflect on the appropriate BID or RID response an AXI ID received from a master.
+
+    *****************************************
+        A5.2 Transaction ID
+    *****************************************
+    Each transaction channel has its own transaction ID
+            =============================================
+            Transaction channel            Transaction ID
+            =============================================
+            Write address chanel           AWID
+            Write data channel, AXI3 only  WID
+            Write response channel         BID
+            Read address channel           ARID
+            Read data channel              RID
+            =============================================
+  
+    *****************************************
+        A5.3 Transaction ordering
+    *****************************************
+    A master can use the AWID and ARID transaction IDs to indicate its ordering requirements. The rules for the ordering of transactions are as follows:
+    * Transactions from different masters have no restrictions. They can complete in any order.
+    * Transactions from the same master, but with different ID values, have no ordering restrictions. They can complete in any order.
+    * The data transfer for a sequence of read transactions with the same ARID value must be returned in the order in which the master issued the addresses.
+    * The data transfer for a sequence of write transactions with the same AWID value must complete in the order in which the master issued the addresses.
+    * There are no ordering restrictions between read and write transactions using a common value for AWID and ARID.
+    
+    ================= Read ordering:
+        At a master interface, read data from transactions with the same ARID value must arrive in the order in which the master issued the addresses. Data from
+        read transactions with different ARID values can be interleaved.
+        
+        A slave must return read data for a sequence of transactions with the same ARID value in the order in which it received the addresses. In a sequence of 
+        read transactions with different ARID values, the slave can return the read data in any order, regardless of the order in which the transactions arrived
+           
+        The slave must ensure that the RID value of any returned data matches the ARID value of the address to which it is responding.
+    
+        The interconnect must ensure that the read data from a sequence of transactions with the same ARID targeting different slaves is received by the
+        master in the order in which it issued the addresses.
+    
+        The read data reordering depth is the number of addresses pending in the slave that can be reordered. A slave that processes all transactions in order 
+        has a read data reordering depth of one. The read data reordering depth is a static value that must be specified by the designer of the slave.
+
+        * There is no mechanisim by which a master can determine the read data reordering depth of a slave
+
+    ================= Normal write ordering 
+    Unless a master knows that a slave supports write data interleacing, it must issue the data of write transactions in the same order in which it issues 
+    the transaction addresses.
+    * There is no mechanism by which a master can determine whether a slave supports write data interleaving. In AXI4, there is no support for write
+    data interleaving.
+    * Most slave designs do not support write data interleaving and therefore must receive write data in the order in which they receive the addresses
+    
+    If the interconnect combines write transaction from different masters to one slave, it must ensure that it forwards the write data in address order.
+
+    These restrictions applly even if the write transactions have different AWID values, and even if they come from different masters.
+    
+    ================= AXI3 write data interleaving
+    AXI4 removes support for write data interleaving. In AXI4, all of the write data for a transaction must be provided in consecutive transfers on 
+    the write data channel.
+    
+    With write data interleaving, a slave interface can accept interleaved write data with different AWID values. The write data interleaving depth 
+    is the number of addresses for which a slave can accept interleaved data.
+
+    When accessing a slave that supports write data interleaving , write data from different transactions that use the same AWID cannot be interleaved.
+
+    There are no mechanism that the write interleaving depth of a slave can be determined.
+    
+    For a slave that support write data interleaving, the order in which it receives the first data item of each transaction must be the same as the order
+    in which it receives the addresses for the transactions.
+
+    If two transactions with different AWID values access the same or overlapping addresses then the AXI3 specification does not define the processing
+    order of those accesses. A higher-level protocol must ensure the correct order of transaction processing.
+
+    A master interface that generates write data using only one AWID value generates all write data in the order in which it issues the write addresses.
+    However, a master interface can interleave write data with different WID values if the slave interface has a write data interleaving depth greater than one.
+    
+    ================= Usage models for write data interleaving
+    Write data interleaving can prevent stalling when the interconnect combines multiple streams of write data targeting the same slave. For example, 
+    the interconnect might combine a write data stream from a slow source with another write data stream from a fast source. By interleaving the two write data
+    stream, the interconnect can improve the system performance.
+    
+    For most master that can control the generation of the write data, write data interleaving is not neccessary. Such a master can generate the write data in 
+    the order in which it generates the addresses. However, a master interface that is transferring write data from different sources that have different speeds
+    might interleave the source to make maximum use of the interconnect.
+
+    ================= Read and Write interaction
+    AXI has no ordering restrictions between read and write transactions. They can complete in any order, even if the ARID value of a read transaction is the 
+    same as the AWID value of a write transaction.
+    
+    If a master requires a given relationship between a read transaction and a write transaction then it must ensure that the earlier transaction is complete
+    before it issues the later transaction. A master can only consider the earlier transaction is complete when:
+    * For a read transaction, it receives the last of the read data.
+    * FOr a write transaction, it receives the write response.
+
+    Sending all of the write data for the transaction must not be taken as indicating completion of that transaction.
+
+    Typically, when writing to a peripheral, a master must wait for earlier transactions to complete before switching between read and write transactions
+    that must be ordered
+
+    For reads and writes to memory, a master might implement an address check against outstanding transactions, to determine whether a new transaction could
+    be to the same, or overlapping memory address.If the read and write transactions do not ovelap, then the master can start the new transaction without 
+    waiting for the earlier transactions to complete.
+    
+    ================= Interconnect use of transaction identifiers
+    When a master is connected to an interconnect, the interconnect appends additional bits to the ARID, AWID and WID identifiers that are unique to that
+    master port. This has two effects:
+    * Master do not have to know what ID values are used by other masters, because the interconnect makes the ID values used by each master unique, by 
+    appending the master number to the original identifier.
+    * The ID identifier at a slave interface is wider than the ID identifier at a master interface.
+
+    For read data, the interconnect uses the additional bits of the RID identifier to determine which master port the read data is destined for. The interconnect
+    removes these bits of the RID identifier before passing the RID value to
+    the correct master port.
+    
+    For write response, the interconnect uses the additional bits of the BID identifier to determine which master port the write response is destined for. 
+    The interconnect removes these bits of the BID identifier before passing
+    the BID value to the correct master port.
+
+    ================= Width of transaction ID fields
+    The width of transaction ID fields is IMPLEMENTATION DEFINED. However, this specification recommends the following transaction ID field widths:
+    * For master components, implement a transaction ID field up to four bits.
+    * For master port numbers in the interconnect, implement up to four additional bits of transaction ID field.
+    * For slave components, implement eight bits of transaction ID field support.
+    
+    For masters that support only a single ordered interface, it is acceptable to tied the transaction ID field outputs to a constant value, for example, 
+    tie to zero.
+     
+    For slaves that do not make use of the ordering information and process all transactions in order, the transaction ID functionality can be added without 
+    changing the base functionality of the slave.
+    
+==================================================
+A6  Ordering Model 
+==================================================
+    
+    *****************************************
+    Definition of the ordering model   
+    *****************************************
+    The AXI4 protocol supports an ordering based on the use of the AXI ID transaction identifier.
+    
+    The principles are that for transactions with the same ID:
+    * Transactions to any peripheral device, must arrive at the peripheral in the order in which they are issued, regardless of the addresses of the
+      transactions.
+    * Memory transactions that use the same, or overlapping, addresses must arrive at the memory in the order in which they are issued. 
+
+    ================= 
+    In an AXI system with multiple masters, the AXI IDs used for the ordering model include the infrastructure IDs, that identify each master uniquely.
+    This means the ordering model applies independently to each master in the system.     
+    =================
+    The AXI ordering model also requires that all transactions with the same ID in the same direction must provide their responses in the order in which
+    they are issued.
+    
+    Because the read and write address channels are independent, if an ordering relationship is required between two transactions with the same ID
+    that are in different directions, then a master must wait to receive a response to the first transaction before issuing the second transaction.
+   
+    If a master issues a transaction in one direction before it has received a response to an earlier transaction in the opposite direction then there are no
+    ordering guarantees between the two transactions.
+
+    =================
+

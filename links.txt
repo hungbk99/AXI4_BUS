@@ -1,1 +1,2 @@
 https://community.arm.com/developer/ip-products/processors/f/cortex-a-forum/4836/hi-i-wonder-amba-3-0-axi-out-of-order---wid-rid/18781
+https://sites.google.com/site/nthuproject2014/background/cyclic-dependency-schemes

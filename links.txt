@@ -2,3 +2,4 @@ https://community.arm.com/developer/ip-products/processors/f/cortex-a-forum/4836
 https://sites.google.com/site/nthuproject2014/background/cyclic-dependency-schemes
 https://www.manualsdir.com/manuals/44250/arm-amba-nic-301.html
 https://developer.arm.com/documentation/ddi0397/f/functional-description/operation/cyclic-dependency-avoidance-schemes--cdas-
+https://community.arm.com/developer/ip-products/processors/f/cortex-a-forum/5704/axi-atomic-access/19264#19264

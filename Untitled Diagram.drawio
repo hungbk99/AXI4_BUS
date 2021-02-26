@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2021-02-26T04:49:15.870Z" agent="5.0 (Windows)" etag="imLA6dGly_H5jppcR1H1" version="14.4.3" type="github" pages="12">
+<mxfile host="app.diagrams.net" modified="2021-02-26T04:50:48.238Z" agent="5.0 (Windows)" etag="stx2jh2adg5g7To2R_v-" version="14.4.3" type="github" pages="12">
   <diagram id="TBr_1xBakyUmBj9jainV" name="W Queue">
     <mxGraphModel dx="-438" dy="857" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -7731,7 +7731,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="r9V07NNkR3l3leW8s_8b" name="Connection">
-    <mxGraphModel dx="1422" dy="951" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1673" dy="1119" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="EYlBQxEfVVbI-7BhirG8-0" />
         <mxCell id="EYlBQxEfVVbI-7BhirG8-1" parent="EYlBQxEfVVbI-7BhirG8-0" />
@@ -7752,6 +7752,21 @@
         </mxCell>
         <mxCell id="EYlBQxEfVVbI-7BhirG8-14" value="&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Interface &lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;FIFO&lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
           <mxGeometry x="100" y="235" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-15" value="" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="80" y="420" width="210" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-16" value="&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Interface &lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;FIFO&lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="100" y="450" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-17" value="&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;ARSI&lt;/font&gt;&lt;/b&gt;" style="whiteSpace=wrap;html=1;aspect=fixed;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="200" y="430" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-19" value="&lt;font face=&quot;Times New Roman&quot;&gt;&lt;b&gt;R&lt;/b&gt;&lt;/font&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Arbiter&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="210" y="530" width="60" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-20" value="&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Interface &lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;FIFO&lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="100" y="545" width="80" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

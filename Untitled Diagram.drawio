@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2021-02-26T04:44:59.081Z" agent="5.0 (Windows)" etag="x-3Thy_6SjXQ2mFmGlFD" version="14.4.3" type="github" pages="11">
+<mxfile host="app.diagrams.net" modified="2021-02-26T04:49:10.559Z" agent="5.0 (Windows)" etag="2KoA9eWYa0Pf_9pbNhv6" version="14.4.3" type="github" pages="12">
   <diagram id="TBr_1xBakyUmBj9jainV" name="W Queue">
     <mxGraphModel dx="-438" dy="857" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -7593,7 +7593,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="IzkW1UfrvefraUWQL9dB" name="Interface FIFO">
-    <mxGraphModel dx="981" dy="656" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="1185" dy="793" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="HxNaNSkN52GoaR1aOCbp-0" />
         <mxCell id="HxNaNSkN52GoaR1aOCbp-1" parent="HxNaNSkN52GoaR1aOCbp-0" />
@@ -7726,6 +7726,32 @@
             <mxPoint x="720" y="335" as="sourcePoint" />
             <mxPoint x="770" y="290" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="r9V07NNkR3l3leW8s_8b" name="Connection">
+    <mxGraphModel dx="981" dy="656" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-0" />
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-1" parent="EYlBQxEfVVbI-7BhirG8-0" />
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-8" value="" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="70" y="110" width="220" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-9" value="&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Interface &lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;FIFO&lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="100" y="140" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-10" value="&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;AWSI&lt;/font&gt;&lt;/b&gt;" style="whiteSpace=wrap;html=1;aspect=fixed;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="200" y="120" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-11" value="&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;W &lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Router&lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="210" y="220" width="60" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-12" value="&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;B&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Arbiter&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="210" y="310" width="60" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="EYlBQxEfVVbI-7BhirG8-14" value="&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;Interface &lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;&lt;font face=&quot;Times New Roman&quot;&gt;FIFO&lt;br&gt;&lt;/font&gt;&lt;/b&gt;&lt;/div&gt;" style="shape=process;whiteSpace=wrap;html=1;backgroundOutline=1;shadow=1;" vertex="1" parent="EYlBQxEfVVbI-7BhirG8-1">
+          <mxGeometry x="100" y="235" width="80" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

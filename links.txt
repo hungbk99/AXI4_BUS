@@ -4,3 +4,6 @@ https://www.manualsdir.com/manuals/44250/arm-amba-nic-301.html
 https://developer.arm.com/documentation/ddi0397/f/functional-description/operation/cyclic-dependency-avoidance-schemes--cdas-
 https://community.arm.com/developer/ip-products/processors/f/cortex-a-forum/5704/axi-atomic-access/19264#19264
 http://www.secs.oakland.edu/~llamocca/Courses/ECE495/Notes%20-%20Unit%205.pdf
+TLM port:
+https://verificationacademy.com/verification-methodology-reference/uvmc-2.3.0/docs/html/files/docs/TLM_REVIEW-txt.html
+https://www.quora.com/What-is-the-main-difference-between-uvm_analysis_export-and-uvm_analysis_import-in-UVM
